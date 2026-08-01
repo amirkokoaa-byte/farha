@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { InvitationData } from '../types';
 
 function Countdown() {
   const [timeLeft, setTimeLeft] = useState({
@@ -59,11 +60,34 @@ function Countdown() {
   );
 }
 
-export function InvitationView({ onBack }: { onBack: () => void }) {
+export function InvitationView({ onBack, data }: { onBack: () => void, data?: InvitationData }) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Use passed data or fallbacks
+  const groom = data?.groomName || 'كريم';
+  const bride = data?.brideName || 'ملك';
+  const font = data?.font || 'Amiri';
+  const message = data?.message || 'بكل الحب والسعادة، 💖\nندعوكم لتشاركونا فرحة العمر ✨\nبحضوركم تكتمل سعادتنا وتزيد بهجتنا 🕊️💍';
+  const weddingDate = data?.weddingDate || '١٥ أكتوبر ٢٠٢٤';
+  const weddingTime = data?.weddingTime || 'فندق الريتز كارلتون';
+  const bgClass = data?.background || 'bg-[#FCFAEF]';
+  const customBg = data?.customBackgroundImage;
+  const songUrl = data?.songUrl;
+  const showPause = data?.showPauseButton ?? true;
+
+  useEffect(() => {
+    if (audioRef.current && songUrl) {
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.log('Audio auto-play failed:', e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, songUrl]);
 
   const handleSendCongratulation = () => {
     setIsModalOpen(false);
@@ -79,8 +103,13 @@ export function InvitationView({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="fixed inset-0 bg-[#FAF8F5] z-50 flex items-center justify-center overflow-hidden font-serif" dir="rtl">
-       {/* Background and Mobile Container */}
-       <div className="relative w-full h-full sm:w-[400px] sm:h-[800px] sm:max-h-[95vh] sm:rounded-[40px] sm:shadow-2xl bg-[#FAF8F5] overflow-hidden flex flex-col items-center justify-center sm:border-[8px] sm:border-white">
+      {/* Hidden Audio Element */}
+      {songUrl && (
+        <audio ref={audioRef} src={songUrl} loop />
+      )}
+
+      {/* Background and Mobile Container */}
+       <div className="relative w-full h-full sm:w-[400px] sm:h-[800px] sm:max-h-[95vh] sm:rounded-[40px] sm:shadow-2xl bg-[#FAF8F5] overflow-hidden flex flex-col items-center justify-center sm:border-[8px] sm:border-white" style={{ fontFamily: font }}>
           
           {/* Back to dashboard button (visible for preview purposes) */}
           <button 
@@ -92,12 +121,14 @@ export function InvitationView({ onBack }: { onBack: () => void }) {
           </button>
 
           {/* Audio toggle button (left side) */}
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="absolute top-1/2 -translate-y-1/2 left-4 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-[#D4B872]/40 flex items-center justify-center text-[#B89B5E] shadow-lg transition-all hover:bg-white/40 z-50"
-          >
-            {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
-          </button>
+          {showPause && songUrl && (
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="absolute top-1/2 -translate-y-1/2 left-4 w-12 h-12 rounded-full bg-white/40 backdrop-blur-md border border-[#D4B872]/40 flex items-center justify-center text-[#B89B5E] shadow-lg transition-all hover:bg-white/60 z-50"
+            >
+              {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
+            </button>
+          )}
 
           {/* Envelope and Card Area */}
           <AnimatePresence mode="wait">
@@ -149,7 +180,7 @@ export function InvitationView({ onBack }: { onBack: () => void }) {
                   <div className="absolute top-[58%] flex flex-col items-center text-center w-full px-4 z-20 pointer-events-none">
                     <p className="text-[#8C7A59] text-xl mb-3 font-medium tracking-wide">دعوة زفاف</p>
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-[#B89B5E] via-[#D4B872] to-[#B89B5E] bg-clip-text text-transparent drop-shadow-sm mb-8 font-serif leading-tight">
-                      كريم & ملك
+                      {groom} & {bride}
                     </h1>
                     <p className="text-[#8C7A59]/80 text-sm mt-4 tracking-wider animate-pulse flex items-center gap-2">
                       اضغط لفتح دعوتك
@@ -163,23 +194,23 @@ export function InvitationView({ onBack }: { onBack: () => void }) {
                 initial={{ opacity: 0, scale: 0.9, y: 50 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                className="absolute inset-0 z-40 bg-[#FCFAEF] overflow-y-auto scrollbar-none"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4b872' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}
+                className={`absolute inset-0 z-40 ${customBg ? 'bg-transparent' : bgClass} overflow-y-auto scrollbar-none bg-cover bg-center`}
+                style={{ backgroundImage: customBg ? `url("${customBg}")` : `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4b872' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}
               >
-                <div className="min-h-full w-full py-16 px-6 flex flex-col items-center relative">
+                <div className={`min-h-full w-full py-16 px-6 flex flex-col items-center relative ${customBg ? 'bg-white/40 backdrop-blur-[2px]' : ''}`}>
                   {/* Faint gold filigree corners */}
                   <div className="absolute top-6 left-6 w-16 h-16 opacity-40 border-t-2 border-l-2 border-[#D4B872] rounded-tl-3xl"></div>
                   <div className="absolute top-6 right-6 w-16 h-16 opacity-40 border-t-2 border-r-2 border-[#D4B872] rounded-tr-3xl"></div>
                   <div className="absolute bottom-6 left-6 w-16 h-16 opacity-40 border-b-2 border-l-2 border-[#D4B872] rounded-bl-3xl"></div>
                   <div className="absolute bottom-6 right-6 w-16 h-16 opacity-40 border-b-2 border-r-2 border-[#D4B872] rounded-br-3xl"></div>
 
-                  <h1 className="text-6xl font-bold text-[#B89B5E] drop-shadow-sm mb-10 font-serif leading-tight mt-8 tracking-wide">
-                    كريم <span className="text-4xl text-[#D4B872] mx-2">&</span> ملك
+                  <h1 className="text-6xl font-bold text-[#B89B5E] drop-shadow-md mb-10 font-serif leading-tight mt-8 tracking-wide text-center">
+                    {groom} <span className="text-4xl text-[#D4B872] mx-2 drop-shadow-md">&</span> {bride}
                   </h1>
                   
-                  <div className="flex flex-col items-center text-[#8C7A59] mb-10 space-y-3 font-medium">
-                    <p className="text-xl">تاريخ الزفاف: ١٥ أكتوبر ٢٠٢٤</p>
-                    <p className="text-xl">مكان الفرح: فندق الريتز كارلتون</p>
+                  <div className="flex flex-col items-center text-[#8C7A59] mb-10 space-y-3 font-medium drop-shadow-md">
+                    <p className="text-xl font-bold">{weddingDate}</p>
+                    <p className="text-xl font-bold">{weddingTime}</p>
                   </div>
 
                   <div className="w-full max-w-[280px] aspect-[4/5] rounded-t-full rounded-b-lg overflow-hidden border-4 border-white shadow-[0_10px_30px_rgba(184,155,94,0.15)] mb-10 relative">
@@ -187,12 +218,10 @@ export function InvitationView({ onBack }: { onBack: () => void }) {
                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
                   </div>
 
-                  <div className="text-center px-4 mb-10 relative">
+                  <div className="text-center px-4 mb-10 relative drop-shadow-md">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-px bg-[#D4B872] opacity-50 -mt-4"></div>
-                    <p className="text-[#8C7A59] text-xl leading-[1.8] whitespace-pre-wrap font-medium">
-                      بكل الحب والسعادة، 💖
-                      <br/>ندعوكم لتشاركونا فرحة العمر ✨
-                      <br/>بحضوركم تكتمل سعادتنا وتزيد بهجتنا 🕊️💍
+                    <p className="text-[#8C7A59] text-xl leading-[1.8] whitespace-pre-wrap font-medium font-bold">
+                      {message}
                     </p>
                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-[#D4B872] opacity-50 -mb-4"></div>
                   </div>

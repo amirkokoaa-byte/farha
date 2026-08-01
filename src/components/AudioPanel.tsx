@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { UploadCloud, Play, Square, Settings2, Music } from 'lucide-react';
 import { InvitationData } from '../types';
 
@@ -10,20 +10,40 @@ interface AudioPanelProps {
 export function AudioPanel({ data, onChange }: AudioPanelProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [fileName, setFileName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const simulateUpload = () => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileName(file.name);
     setIsUploading(true);
     setProgress(0);
+
+    // Create a temporary object URL for the uploaded file to preview it
+    const objectUrl = URL.createObjectURL(file);
+
+    // Simulate upload progress
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => setIsUploading(false), 500);
+          setTimeout(() => {
+            setIsUploading(false);
+            onChange({ songUrl: objectUrl });
+          }, 500);
           return 100;
         }
-        return prev + 5;
+        return prev + 10;
       });
     }, 100);
+  };
+
+  const handleContainerClick = () => {
+    if (!isUploading) {
+      fileInputRef.current?.click();
+    }
   };
 
   return (
@@ -41,16 +61,23 @@ export function AudioPanel({ data, onChange }: AudioPanelProps) {
           </label>
           
           <div className="border-2 border-dashed border-stone-200 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-stone-50 hover:bg-stone-100 transition-colors cursor-pointer"
-               onClick={!isUploading ? simulateUpload : undefined}>
+               onClick={handleContainerClick}>
             <UploadCloud size={32} className="text-amber-400 mb-3" />
             <p className="text-gray-800 font-semibold mb-1">ارفع أغنية</p>
             <p className="text-gray-400 text-sm">MP3, WAV (الحد الأقصى 10MB)</p>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="audio/mp3,audio/wav,audio/*" 
+              className="hidden" 
+              onChange={handleFileChange}
+            />
           </div>
 
           {isUploading && (
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-amber-700 font-semibold">جارِ الضغط...</span>
+                <span className="text-amber-700 font-semibold">جارِ الرفع...</span>
                 <span className="text-amber-700">{progress}%</span>
               </div>
               <div className="w-full bg-amber-200 rounded-full h-2">
@@ -62,16 +89,14 @@ export function AudioPanel({ data, onChange }: AudioPanelProps) {
             </div>
           )}
 
-          {!isUploading && progress === 100 && (
+          {!isUploading && data.songUrl && (
             <div className="flex items-center justify-between bg-stone-100 p-3 rounded-xl border border-stone-200">
-              <div className="flex items-center gap-3">
-                <Music size={16} className="text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">wedding_song_final.mp3</span>
+              <div className="flex items-center gap-3 overflow-hidden">
+                <Music size={16} className="text-gray-500 shrink-0" />
+                <span className="text-sm font-medium text-gray-700 truncate" dir="ltr">{fileName || 'audio_file.mp3'}</span>
               </div>
               <div className="flex gap-2">
-                <button className="p-2 text-gray-600 hover:text-amber-600 bg-white rounded-lg shadow-sm border border-stone-200 transition-colors" title="معاينة">
-                  <Play size={16} />
-                </button>
+                <audio src={data.songUrl} controls className="h-8 w-48" />
               </div>
             </div>
           )}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Upload, Type, Image as ImageIcon } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Upload, Type, Image as ImageIcon, X } from 'lucide-react';
 import { InvitationData } from '../types';
 
 interface DesignPanelProps {
@@ -11,6 +11,16 @@ const FONTS = ['Cairo', 'Amiri', 'Tajawal', 'Reem Kufi', 'Aref Ruqaa', 'Changa',
 const BACKGROUNDS = ['bg-stone-50', 'bg-amber-50', 'bg-rose-50', 'bg-slate-50', 'bg-orange-50'];
 
 export function DesignPanel({ data, onChange }: DesignPanelProps) {
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    onChange({ customBackgroundImage: objectUrl, background: 'bg-transparent' });
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col h-full">
       <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-stone-100 pb-4">
@@ -19,32 +29,37 @@ export function DesignPanel({ data, onChange }: DesignPanelProps) {
 
       {/* Live Preview */}
       <div className="flex-1 flex items-center justify-center bg-stone-100 rounded-xl mb-8 p-4 relative overflow-hidden border border-stone-200">
-        <div className={`w-full max-w-sm aspect-[3/4] ${data.background} shadow-xl rounded-lg p-8 flex flex-col items-center justify-center text-center transition-all duration-500 relative border-8 border-white/50 ring-1 ring-black/5`}
-             style={{ fontFamily: data.font }}>
+        <div className={`w-full max-w-sm aspect-[3/4] ${data.customBackgroundImage ? 'bg-transparent' : data.background} shadow-xl rounded-lg p-8 flex flex-col items-center justify-center text-center transition-all duration-500 relative border-8 border-white/50 ring-1 ring-black/5 bg-cover bg-center`}
+             style={{ 
+               fontFamily: data.font,
+               backgroundImage: data.customBackgroundImage ? `url(${data.customBackgroundImage})` : 'none'
+             }}>
           
           {/* Decorative Corner Ornaments */}
-          <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-amber-300/50 rounded-tl-lg"></div>
-          <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-amber-300/50 rounded-tr-lg"></div>
-          <div className="absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-amber-300/50 rounded-bl-lg"></div>
-          <div className="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-amber-300/50 rounded-br-lg"></div>
+          <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-amber-300/50 rounded-tl-lg z-10"></div>
+          <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-amber-300/50 rounded-tr-lg z-10"></div>
+          <div className="absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-amber-300/50 rounded-bl-lg z-10"></div>
+          <div className="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-amber-300/50 rounded-br-lg z-10"></div>
 
-          <p className="text-amber-600/80 mb-6 text-sm tracking-widest font-sans">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</p>
-          
-          <h1 className="text-4xl font-bold text-gray-800 mb-4 leading-relaxed">
-            {data.groomName || '00'}
-            <span className="block text-2xl text-amber-500 my-2">&amp;</span>
-            {data.brideName || '00'}
-          </h1>
-          
-          <div className="w-16 h-px bg-amber-300 mx-auto my-6"></div>
-          
-          <p className="text-gray-600 text-lg whitespace-pre-wrap leading-relaxed">
-            {data.message || 'كلمة الدعوة...'}
-          </p>
-          
-          <div className="mt-8 pt-8 border-t border-black/5 w-full">
-            <p className="text-amber-700 font-bold">{data.weddingDate || 'التاريخ'}</p>
-            <p className="text-gray-500 text-sm mt-1">{data.weddingTime || 'الوقت'}</p>
+          <div className="relative z-10 flex flex-col items-center w-full h-full bg-white/40 p-4 rounded-lg backdrop-blur-[2px]">
+            <p className="text-amber-800 mb-6 text-sm tracking-widest font-sans font-semibold drop-shadow-md">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</p>
+            
+            <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-relaxed drop-shadow-md">
+              {data.groomName || '00'}
+              <span className="block text-2xl text-amber-600 my-2 drop-shadow-md">&amp;</span>
+              {data.brideName || '00'}
+            </h1>
+            
+            <div className="w-16 h-px bg-amber-400 mx-auto my-6 drop-shadow-md"></div>
+            
+            <p className="text-gray-900 font-medium text-lg whitespace-pre-wrap leading-relaxed drop-shadow-md">
+              {data.message || 'كلمة الدعوة...'}
+            </p>
+            
+            <div className="mt-8 pt-8 border-t border-black/10 w-full drop-shadow-md">
+              <p className="text-amber-800 font-bold drop-shadow-md">{data.weddingDate || 'التاريخ'}</p>
+              <p className="text-gray-800 font-semibold text-sm mt-1 drop-shadow-md">{data.weddingTime || 'الوقت'}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -76,21 +91,42 @@ export function DesignPanel({ data, onChange }: DesignPanelProps) {
 
         {/* Background Selector */}
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-            <ImageIcon size={16} className="text-amber-500" />
-            خلفية الدعوة
+          <label className="flex items-center justify-between text-sm font-semibold text-gray-700">
+            <div className="flex items-center gap-2">
+              <ImageIcon size={16} className="text-amber-500" />
+              خلفية الدعوة
+            </div>
+            {data.customBackgroundImage && (
+              <button 
+                onClick={() => onChange({ customBackgroundImage: undefined, background: 'bg-stone-50' })}
+                className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+              >
+                <X size={14} /> إزالة الصورة
+              </button>
+            )}
           </label>
           <div className="flex gap-2">
-            <button className="flex items-center justify-center px-4 py-3 rounded-xl border-2 border-dashed border-stone-300 hover:border-amber-400 hover:bg-amber-50 transition-colors text-gray-500 hover:text-amber-600">
-              <Upload size={20} />
+            <button 
+              onClick={() => imageInputRef.current?.click()}
+              className="flex items-center justify-center px-4 py-3 rounded-xl border-2 border-dashed border-stone-300 hover:border-amber-400 hover:bg-amber-50 transition-colors text-gray-500 hover:text-amber-600 relative overflow-hidden group"
+              title="رفع صورة للخلفية"
+            >
+              <Upload size={20} className="group-hover:scale-110 transition-transform" />
             </button>
-            <div className="flex-1 flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+            <input 
+              type="file" 
+              ref={imageInputRef} 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleImageUpload}
+            />
+            <div className="flex-1 flex gap-2 overflow-x-auto pb-2 scrollbar-thin items-center">
               {BACKGROUNDS.map((bg, idx) => (
                 <button
                   key={bg}
-                  onClick={() => onChange({ background: bg })}
-                  className={`flex-shrink-0 w-12 h-12 rounded-lg border-2 ${data.background === bg ? 'border-amber-500 ring-2 ring-amber-200' : 'border-stone-200'} ${bg} transition-all`}
-                  title={`Background ${idx + 1}`}
+                  onClick={() => onChange({ background: bg, customBackgroundImage: undefined })}
+                  className={`flex-shrink-0 w-12 h-12 rounded-lg border-2 ${data.background === bg && !data.customBackgroundImage ? 'border-amber-500 ring-2 ring-amber-200' : 'border-stone-200'} ${bg} transition-all relative z-10`}
+                  title={`لون ${idx + 1}`}
                 />
               ))}
             </div>

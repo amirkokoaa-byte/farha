@@ -7,6 +7,7 @@ export interface InvitationData {
   message: string;
   font: string;
   background: string;
+  customBackgroundImage?: string;
   songUrl?: string;
   showPauseButton: boolean;
 }

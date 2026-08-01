@@ -26,7 +26,7 @@ export default function App() {
   };
 
   if (previewId) {
-    return <InvitationView onBack={() => setPreviewId(null)} />;
+    return <InvitationView onBack={() => setPreviewId(null)} data={formData} />;
   }
 
   return (
