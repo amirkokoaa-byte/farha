@@ -1,0 +1,8 @@
+{
+  "name": "لوحة تحكم دعوات الزفاف",
+  "description": "Backend administration dashboard for creating and managing wedding invitations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

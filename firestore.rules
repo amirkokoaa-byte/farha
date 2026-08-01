@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // قواعد مجموعة الدعوات الرئيسية
+    match /Invitations/{inviteId} {
+      // للسماح للضيوف برؤية الدعوة (قراءة فقط) إذا كان لديهم الرابط (ID)
+      allow read: if true; 
+      // للسماح للعريس (المالك) بإنشاء أو تعديل دعوته فقط
+      allow create, update, delete: if request.auth != null && request.auth.uid == request.resource.data.owner_uid;
+      
+      // قواعد المجموعة الفرعية: دفتر التهاني (Guestbook)
+      match /Guestbook/{messageId} {
+        // يمكن للجميع قراءة التهاني المرتبطة بهذه الدعوة فقط
+        allow read: if true;
+        // يمكن للضيوف إضافة تهنئة جديدة، لكن لا يمكنهم التعديل أو الحذف
+        allow create: if true;
+        // المالك (العريس) فقط هو من يمكنه حذف التهاني المسيئة
+        allow update, delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/Invitations/$(inviteId)).data.owner_uid;
+      }
+      
+      // قواعد المجموعة الفرعية: تأكيد الحضور (RSVP)
+      match /RSVP/{guestId} {
+        // لا أحد يستطيع قراءة قائمة الحضور سوى العريس (المالك)
+        allow read: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/Invitations/$(inviteId)).data.owner_uid;
+        // يمكن للضيوف إرسال تأكيد حضورهم
+        allow create: if true;
+      }
+    }
+  }
+}
