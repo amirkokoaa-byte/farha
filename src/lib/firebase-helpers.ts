@@ -4,6 +4,7 @@ import {
   doc, 
   getDoc, 
   addDoc, 
+  setDoc,
   serverTimestamp,
   getDocs
 } from 'firebase/firestore';
@@ -18,6 +19,26 @@ export function generateUniqueInviteId(): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return `invite_${result}`;
+}
+
+/**
+ * حفظ الدعوة في قاعدة البيانات
+ */
+export async function saveInvitationData(inviteId: string, data: any) {
+  try {
+    const inviteRef = doc(db, "Invitations", inviteId);
+    await setDoc(inviteRef, {
+      ...data,
+      // For security rules: Assign to a mock owner UID for now, 
+      // in a real app this comes from Firebase Auth (request.auth.uid)
+      owner_uid: "demo_admin_uid", 
+      createdAt: serverTimestamp()
+    });
+    console.log("تم حفظ الدعوة بنجاح في قاعدة البيانات!");
+  } catch (error) {
+    console.error("خطأ أثناء حفظ الدعوة:", error);
+    throw error;
+  }
 }
 
 /**

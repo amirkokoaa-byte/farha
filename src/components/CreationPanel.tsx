@@ -4,9 +4,10 @@ import { InvitationData } from '../types';
 interface CreationPanelProps {
   data: InvitationData;
   onChange: (data: Partial<InvitationData>) => void;
+  onSave?: () => void;
 }
 
-export function CreationPanel({ data, onChange }: CreationPanelProps) {
+export function CreationPanel({ data, onChange, onSave }: CreationPanelProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col h-full">
       <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-stone-100 pb-4">
@@ -69,8 +70,11 @@ export function CreationPanel({ data, onChange }: CreationPanelProps) {
       </div>
       
       <div className="mt-6 pt-4 border-t border-stone-100">
-        <button className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all">
-          حفظ المسودة
+        <button 
+          onClick={onSave}
+          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all"
+        >
+          حفظ وإنشاء رابط الدعوة
         </button>
       </div>
     </div>
