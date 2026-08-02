@@ -51,6 +51,18 @@ export function GuestInvitation() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (invitation) {
+      document.title = `دعوة زفاف | ${invitation.groomName} و ${invitation.brideName}`;
+    } else {
+      document.title = 'منصة إدارة دعوات الزفاف';
+    }
+    
+    return () => {
+      document.title = 'منصة إدارة دعوات الزفاف';
+    };
+  }, [invitation]);
+
   const handleRSVP = async (name: string, guestsCount: number, message?: string) => {
     if (!id) return;
     try {

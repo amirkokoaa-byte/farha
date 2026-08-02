@@ -34,6 +34,7 @@ export const MOCK_INVITATIONS: InvitationData[] = [
     font: "Amiri",
     background: "bg-stone-100",
     showPauseButton: true,
+    isActive: true,
   },
   {
     id: "INV-10024",
@@ -45,5 +46,6 @@ export const MOCK_INVITATIONS: InvitationData[] = [
     font: "Cairo",
     background: "bg-orange-50",
     showPauseButton: false,
+    isActive: true,
   }
 ];

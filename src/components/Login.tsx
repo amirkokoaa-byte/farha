@@ -3,8 +3,9 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 
 export function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('admin_email') || 'amir.lamay@yahoo.com');
+  const [password, setPassword] = useState(() => localStorage.getItem('admin_password') || 'admin');
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('admin_remember') === 'true');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -12,6 +13,17 @@ export function Login() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    if (rememberMe) {
+      localStorage.setItem('admin_email', email);
+      localStorage.setItem('admin_password', password);
+      localStorage.setItem('admin_remember', 'true');
+    } else {
+      localStorage.removeItem('admin_email');
+      localStorage.removeItem('admin_password');
+      localStorage.removeItem('admin_remember');
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
@@ -51,6 +63,18 @@ export function Login() {
               className="w-full border border-stone-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all"
               dir="ltr"
             />
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <input 
+              type="checkbox" 
+              id="remember" 
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-stone-300 rounded"
+            />
+            <label htmlFor="remember" className="text-sm text-gray-700 select-none">
+              حفظ بيانات الدخول
+            </label>
           </div>
           <button 
             type="submit" 
