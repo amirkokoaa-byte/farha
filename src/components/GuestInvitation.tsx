@@ -6,7 +6,8 @@ import { InvitationData, GuestbookEntry } from '../types';
 import { InvitationView } from './InvitationView';
 
 export function GuestInvitation() {
-  const { id } = useParams<{ id: string }>();
+  const { invitePath } = useParams<{ invitePath: string }>();
+  const id = invitePath?.replace('invite_', '');
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [guestbook, setGuestbook] = useState<GuestbookEntry[]>([]);
   const [loading, setLoading] = useState(true);

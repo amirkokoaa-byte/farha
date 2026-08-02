@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -10,11 +10,19 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/invite_:id" element={<GuestInvitation />} />
+        <Route path="/:invitePath" element={<DynamicRoute />} />
         <Route path="/*" element={<AdminRoute />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+function DynamicRoute() {
+  const { invitePath } = useParams<{ invitePath: string }>();
+  if (invitePath?.startsWith('invite_')) {
+    return <GuestInvitation />;
+  }
+  return <AdminRoute />;
 }
 
 function AdminRoute() {
