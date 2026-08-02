@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
-import { Upload, Type, Image as ImageIcon, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Upload, Type, Image as ImageIcon, X, Crop } from 'lucide-react';
 import { InvitationData } from '../types';
+import { ImageUploader } from './ImageUploader';
 
 interface DesignPanelProps {
   data: InvitationData;
@@ -12,6 +13,7 @@ const BACKGROUNDS = ['bg-stone-50', 'bg-amber-50', 'bg-rose-50', 'bg-slate-50', 
 
 export function DesignPanel({ data, onChange }: DesignPanelProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const [showUploader, setShowUploader] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -132,7 +134,49 @@ export function DesignPanel({ data, onChange }: DesignPanelProps) {
             </div>
           </div>
         </div>
+        {/* Thumbnail Selector */}
+        <div className="space-y-3">
+          <label className="flex items-center justify-between text-sm font-semibold text-gray-700">
+            <div className="flex items-center gap-2">
+              <Crop size={16} className="text-amber-500" />
+              الصورة المصغرة (Thumbnail)
+            </div>
+            {data.thumbnail_image_url && (
+              <button 
+                onClick={() => onChange({ thumbnail_image_url: undefined })}
+                className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+              >
+                <X size={14} /> إزالة الصورة
+              </button>
+            )}
+          </label>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => setShowUploader(true)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-stone-300 hover:border-amber-400 hover:bg-amber-50 transition-colors text-gray-600 hover:text-amber-700 font-medium"
+            >
+              <Upload size={18} />
+              {data.thumbnail_image_url ? 'تغيير الصورة' : 'رفع صورة'}
+            </button>
+            {data.thumbnail_image_url && (
+              <div className="w-12 h-16 shrink-0 rounded-t-full overflow-hidden border border-stone-200">
+                <img src={data.thumbnail_image_url} alt="Thumbnail" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+      
+      {showUploader && (
+        <ImageUploader 
+          currentImageUrl={data.thumbnail_image_url}
+          onClose={() => setShowUploader(false)}
+          onUploadSuccess={(url) => {
+            onChange({ thumbnail_image_url: url });
+            setShowUploader(false);
+          }}
+        />
+      )}
     </div>
   );
 }

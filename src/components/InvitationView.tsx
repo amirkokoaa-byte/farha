@@ -226,10 +226,19 @@ export function InvitationView({ onBack, data, guestbook = [], onRSVP }: { onBac
                     <p className="text-xl font-bold">{weddingTime}</p>
                   </div>
 
-                  <div className="w-full max-w-[280px] aspect-[4/5] rounded-t-full rounded-b-lg overflow-hidden border-4 border-white shadow-[0_10px_30px_rgba(184,155,94,0.15)] mb-10 relative">
-                     <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=800&auto=format&fit=crop" alt="العروسين" className="w-full h-full object-cover" />
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
-                  </div>
+                  {(data?.thumbnail_image_url || !data) && (
+                    <div 
+                      className="w-full max-w-[280px] aspect-[3/4] overflow-hidden border-4 border-white shadow-[0_10px_30px_rgba(184,155,94,0.15)] mb-10 relative bg-stone-100"
+                      style={{ borderRadius: '50% 50% 0 0' }}
+                    >
+                       <img 
+                        src={data?.thumbnail_image_url || "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=800&auto=format&fit=crop"} 
+                        alt="العروسين" 
+                        className="w-full h-full object-cover" 
+                       />
+                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                    </div>
+                  )}
 
                   <div className="text-center px-4 mb-10 relative drop-shadow-md">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-px bg-[#D4B872] opacity-50 -mt-4"></div>
