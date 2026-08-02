@@ -1,30 +1,90 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // قواعد مجموعة الدعوات الرئيسية
-    match /Invitations/{inviteId} {
-      // للسماح للضيوف برؤية الدعوة (قراءة فقط) إذا كان لديهم الرابط (ID)
-      allow read: if true; 
-      // للسماح للعريس (المالك) بإنشاء أو تعديل دعوته فقط
-      allow create, update, delete: if request.auth != null && request.auth.uid == request.resource.data.owner_uid;
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    function isValidInvitation(data) {
+      return data.keys().hasAll(['admin_uid', 'status', 'brideName', 'groomName', 'date'])
+        && data.admin_uid is string && data.admin_uid.size() <= 128
+        && data.status in ['draft', 'published']
+        && data.brideName is string && data.brideName.size() <= 100
+        && data.groomName is string && data.groomName.size() <= 100
+        && data.date is string && data.date.size() <= 100
+        && (data.keys().hasAll(['venue']) ? (data.venue is string && data.venue.size() <= 200) : true)
+        && (data.keys().hasAll(['updatedAt']) ? data.updatedAt == request.time : true);
+    }
+
+    function isValidGuestbookEntry(data) {
+      return data.keys().hasAll(['authorName', 'message', 'createdAt'])
+        && data.authorName is string && data.authorName.size() <= 100
+        && data.message is string && data.message.size() <= 1000
+        && data.createdAt == request.time;
+    }
+
+    match /AdminTracking/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
       
-      // قواعد المجموعة الفرعية: دفتر التهاني (Guestbook)
-      match /Guestbook/{messageId} {
-        // يمكن للجميع قراءة التهاني المرتبطة بهذه الدعوة فقط
-        allow read: if true;
-        // يمكن للضيوف إضافة تهنئة جديدة، لكن لا يمكنهم التعديل أو الحذف
-        allow create: if true;
-        // المالك (العريس) فقط هو من يمكنه حذف التهاني المسيئة
-        allow update, delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/Invitations/$(inviteId)).data.owner_uid;
+      match /MyInvites/{inviteID} {
+        allow get, list: if request.auth != null && request.auth.uid == uid;
+        allow create, update, delete: if request.auth != null && request.auth.uid == uid;
       }
+    }
+
+    match /Invitations/{inviteID} {
+      allow get: if isValidId(inviteID) && (
+        existing().status == 'published' || 
+        (request.auth != null && request.auth.uid == existing().admin_uid)
+      );
       
-      // قواعد المجموعة الفرعية: تأكيد الحضور (RSVP)
-      match /RSVP/{guestId} {
-        // لا أحد يستطيع قراءة قائمة الحضور سوى العريس (المالك)
-        allow read: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/Invitations/$(inviteId)).data.owner_uid;
-        // يمكن للضيوف إرسال تأكيد حضورهم
-        allow create: if true;
+      // Strict requirement: prevent list entirely
+      allow list: if false;
+
+      allow create: if isValidId(inviteID)
+        && request.auth != null 
+        && incoming().admin_uid == request.auth.uid 
+        && isValidInvitation(incoming());
+
+      allow update: if isValidId(inviteID)
+        && request.auth != null 
+        && existing().admin_uid == request.auth.uid 
+        && incoming().admin_uid == existing().admin_uid
+        && isValidInvitation(incoming());
+
+      allow delete: if isValidId(inviteID) 
+        && request.auth != null 
+        && existing().admin_uid == request.auth.uid;
+
+      match /Guestbook/{messageId} {
+        function parentIsPublished() {
+          return get(/databases/$(database)/documents/Invitations/$(inviteID)).data.status == 'published';
+        }
+        function parentIsOwnedByMe() {
+          return request.auth != null && get(/databases/$(database)/documents/Invitations/$(inviteID)).data.admin_uid == request.auth.uid;
+        }
+
+        // Apply isValidId to single document get operations, list doesn't have messageId
+        allow get: if isValidId(inviteID) && isValidId(messageId) && (
+          parentIsPublished() || parentIsOwnedByMe()
+        );
+
+        allow list: if isValidId(inviteID) && (
+          parentIsPublished() || parentIsOwnedByMe()
+        );
+
+        allow create: if isValidId(inviteID) && isValidId(messageId)
+          && parentIsPublished()
+          && isValidGuestbookEntry(incoming());
+
+        allow update, delete: if isValidId(inviteID) && isValidId(messageId)
+          && request.auth != null 
+          && parentIsOwnedByMe();
       }
     }
   }

@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "Invitation": {
+      "title": "Invitation",
+      "description": "A wedding invitation",
+      "type": "object",
+      "properties": {
+        "admin_uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published"]
+        },
+        "brideName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "groomName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "venue": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "updatedAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": ["admin_uid", "status", "brideName", "groomName", "date"]
+    },
+    "GuestbookEntry": {
+      "title": "Guestbook Entry",
+      "description": "A greeting message in the guestbook",
+      "type": "object",
+      "properties": {
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": ["authorName", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/Invitations/{inviteID}": {
+      "schema": {
+        "$ref": "#/entities/Invitation"
+      },
+      "description": "Stores wedding invitations"
+    },
+    "/Invitations/{inviteID}/Guestbook/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/GuestbookEntry"
+      },
+      "description": "Stores greetings isolated to a specific invitation"
+    }
+  }
+}
