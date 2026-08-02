@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Calendar, Link as LinkIcon, Copy, Eye, Edit2, Check } from 'lucide-react';
-import { MOCK_INVITATIONS } from '../types';
+import { InvitationData } from '../types';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface ManagementTableProps {
   onPreview: (id: string) => void;
@@ -8,6 +10,19 @@ interface ManagementTableProps {
 
 export function ManagementTable({ onPreview }: ManagementTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [invitations, setInvitations] = useState<InvitationData[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'invitations'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const invs: InvitationData[] = [];
+      snapshot.forEach((doc) => {
+        invs.push({ id: doc.id, ...doc.data() } as InvitationData);
+      });
+      setInvitations(invs);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleCopy = (id: string, link: string) => {
     navigator.clipboard.writeText(link);
@@ -58,7 +73,7 @@ export function ManagementTable({ onPreview }: ManagementTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
-            {MOCK_INVITATIONS.map((inv) => {
+            {invitations.map((inv) => {
               // Create a short link representation
               const shortLink = `${window.location.origin}/invite_${inv.id}`;
 

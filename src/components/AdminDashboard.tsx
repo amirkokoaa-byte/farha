@@ -8,6 +8,8 @@ import { InvitationView } from './InvitationView';
 import { InvitationData } from '../types';
 import { X, Check, Link as LinkIcon, Copy } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export function AdminDashboard() {
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -29,12 +31,36 @@ export function AdminDashboard() {
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
-  const handleSaveInvitation = () => {
-    // Generate a short unique ID
-    const uniqueId = Math.random().toString(36).substring(2, 8);
-    const domain = window.location.origin;
-    setGeneratedLink(`${domain}/invite_${uniqueId}`);
-    setIsCopied(false);
+  const handleSaveInvitation = async () => {
+    try {
+      let docId = formData.id;
+      if (!docId) {
+        // Create new
+        const docRef = await addDoc(collection(db, 'invitations'), {
+          ...formData,
+          isActive: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        docId = docRef.id;
+        setFormData(prev => ({ ...prev, id: docId }));
+      } else {
+        // Update existing
+        const docRef = doc(db, 'invitations', docId);
+        await updateDoc(docRef, {
+          ...formData,
+          isActive: true,
+          updatedAt: serverTimestamp(),
+        });
+      }
+      
+      const domain = window.location.origin;
+      setGeneratedLink(`${domain}/invite_${docId}`);
+      setIsCopied(false);
+    } catch (err) {
+      console.error('Error saving invitation:', err);
+      alert('حدث خطأ أثناء حفظ الدعوة');
+    }
   };
 
   const copyToClipboard = async () => {

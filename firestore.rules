@@ -8,14 +8,16 @@ service cloud.firestore {
     }
 
     match /invitations/{inviteId} {
-      // Guests can read if the invitation is active. Admin can read/write everything.
-      allow read: if isAdmin() || resource.data.isActive == true;
+      // Anyone can get a specific invitation if they have the ID.
+      allow get: if true;
+      // Only admins can list all invitations.
+      allow list: if isAdmin();
       allow write: if isAdmin();
 
       match /guestbook/{messageId} {
-        // Guests can only create new messages (not overwrite). Admin can manage.
-        allow read: if isAdmin() || get(/databases/$(database)/documents/invitations/$(inviteId)).data.isActive == true;
-        allow create: if !exists(/databases/$(database)/documents/invitations/$(inviteId)/guestbook/$(messageId));
+        // Guests can read the guestbook and create new messages. Admin can manage.
+        allow read: if true;
+        allow create: if true;
         allow update, delete: if isAdmin();
       }
     }
