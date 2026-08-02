@@ -19,6 +19,7 @@ export interface InvitationData {
   songUrl?: string;
   showPauseButton: boolean;
   isActive: boolean;
+  status?: 'published' | 'draft';
   thumbnail_image_url?: string;
   createdAt?: number;
   updatedAt?: number;

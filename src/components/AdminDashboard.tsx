@@ -8,8 +8,10 @@ import { InvitationView } from './InvitationView';
 import { InvitationData } from '../types';
 import { X, Check, Link as LinkIcon, Copy } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+
+import { GuestInvitation } from './GuestInvitation';
 
 export function AdminDashboard() {
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -36,29 +38,32 @@ export function AdminDashboard() {
       let docId = formData.id;
       if (!docId) {
         // Create new
-        const docRef = await addDoc(collection(db, 'invitations'), {
+        docId = `INV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const docRef = doc(db, 'invitations', docId);
+        await setDoc(docRef, {
           ...formData,
           isActive: true,
+          status: 'published',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-        docId = docRef.id;
         setFormData(prev => ({ ...prev, id: docId }));
       } else {
         // Update existing
         const docRef = doc(db, 'invitations', docId);
-        await updateDoc(docRef, {
+        await setDoc(docRef, {
           ...formData,
           isActive: true,
+          status: 'published',
           updatedAt: serverTimestamp(),
-        });
+        }, { merge: true });
       }
       
       const domain = window.location.origin;
       setGeneratedLink(`${domain}/invite_${docId}`);
       setIsCopied(false);
-    } catch (err) {
-      console.error('Error saving invitation:', err);
+    } catch (err: any) {
+      console.error(err.message);
       alert('حدث خطأ أثناء حفظ الدعوة');
     }
   };
@@ -72,7 +77,10 @@ export function AdminDashboard() {
   };
 
   if (previewId) {
-    return <InvitationView onBack={() => setPreviewId(null)} data={formData} />;
+    if (previewId === 'NEW_FORM') {
+      return <InvitationView onBack={() => setPreviewId(null)} data={formData} />;
+    }
+    return <GuestInvitation previewId={previewId} onBack={() => setPreviewId(null)} />;
   }
 
   return (
@@ -87,7 +95,7 @@ export function AdminDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => setPreviewId('preview')}
+              onClick={() => setPreviewId('NEW_FORM')}
               className="text-amber-600 font-semibold text-sm hover:text-amber-700 transition-colors underline underline-offset-4 ml-4"
             >
               معاينة الدعوة الجديدة
@@ -172,7 +180,7 @@ export function AdminDashboard() {
                 <button 
                   onClick={() => {
                     setGeneratedLink(null);
-                    setPreviewId('preview');
+                    setPreviewId('NEW_FORM');
                   }}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all"
                 >

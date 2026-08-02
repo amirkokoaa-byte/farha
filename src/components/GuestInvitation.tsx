@@ -5,9 +5,9 @@ import { db } from '../firebase';
 import { InvitationData, GuestbookEntry } from '../types';
 import { InvitationView } from './InvitationView';
 
-export function GuestInvitation() {
+export function GuestInvitation({ previewId, onBack }: { previewId?: string, onBack?: () => void }) {
   const { invitePath } = useParams<{ invitePath: string }>();
-  const id = invitePath?.replace('invite_', '');
+  const id = previewId || invitePath?.replace('invite_', '');
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [guestbook, setGuestbook] = useState<GuestbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +106,7 @@ export function GuestInvitation() {
       data={invitation} 
       guestbook={guestbook}
       onRSVP={handleRSVP} 
-      onBack={() => {}} 
+      onBack={onBack || (() => {})} 
     />
   );
 }
