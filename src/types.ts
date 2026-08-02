@@ -1,45 +1,49 @@
-export type InvitationStatus = 'draft' | 'published';
-
-export interface Invitation {
-  id: string;
-  admin_uid: string;
-  status: InvitationStatus;
-  brideName: string;
-  groomName: string;
-  date: string;
-  venue?: string;
-  updatedAt?: any;
-}
-
 export interface GuestbookEntry {
+  id?: string;
+  name: string;
+  guestsCount: number;
+  message?: string;
+  createdAt: number;
+}
+
+export interface InvitationData {
   id: string;
-  authorName: string;
+  groomName: string;
+  brideName: string;
+  weddingDate: string;
+  weddingTime: string;
   message: string;
-  createdAt: any;
+  font: string;
+  background: string;
+  customBackgroundImage?: string;
+  songUrl?: string;
+  showPauseButton: boolean;
+  isActive: boolean;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
-export enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-export interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-    providerInfo?: {
-      providerId?: string | null;
-      email?: string | null;
-    }[];
+export const MOCK_INVITATIONS: InvitationData[] = [
+  {
+    id: "INV-10023",
+    groomName: "أحمد",
+    brideName: "سارة",
+    weddingDate: "2024-10-15",
+    weddingTime: "20:00",
+    message: "نتشرف بدعوتكم لحضور حفل زفافنا",
+    font: "Amiri",
+    background: "bg-stone-100",
+    showPauseButton: true,
+  },
+  {
+    id: "INV-10024",
+    groomName: "عمر",
+    brideName: "نورة",
+    weddingDate: "2024-11-01",
+    weddingTime: "19:30",
+    message: "بكم تكتمل فرحتنا",
+    font: "Cairo",
+    background: "bg-orange-50",
+    showPauseButton: false,
   }
-}
+];

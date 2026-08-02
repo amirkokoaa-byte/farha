@@ -1,162 +1,162 @@
-import React, { useEffect, useState } from 'react';
-import { User } from 'firebase/auth';
-import { collection, doc, getDoc, setDoc, updateDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
-import { db, handleFirestoreError } from '../lib/firebase';
-import { Invitation, OperationType } from '../types';
-import { useNavigate } from 'react-router-dom';
-import { Settings, ExternalLink, Plus, Trash2, Edit } from 'lucide-react';
+import React, { useState } from 'react';
+import { CreationPanel } from './CreationPanel';
+import { DesignPanel } from './DesignPanel';
+import { AudioPanel } from './AudioPanel';
+import { ManagementTable } from './ManagementTable';
+import { SystemSettingsPanel } from './SystemSettingsPanel';
+import { InvitationView } from './InvitationView';
+import { InvitationData } from '../types';
+import { X, Check, Link as LinkIcon, Copy } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 
-export function AdminDashboard({ user }: { user: User | null }) {
-  const navigate = useNavigate();
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [loading, setLoading] = useState(true);
+export function AdminDashboard() {
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const [formData, setFormData] = useState<InvitationData>({
+    id: '',
+    groomName: '',
+    brideName: '',
+    weddingDate: '',
+    weddingTime: '',
+    message: '',
+    font: 'Amiri',
+    background: 'bg-stone-50',
+    showPauseButton: true,
+  });
 
-  const fetchInvitations = async () => {
-    if (!user) return;
-    try {
-      setLoading(true);
-      // Fetch tracked invite IDs
-      const trackedRef = collection(db, 'AdminTracking', user.uid, 'MyInvites');
-      const trackedSnapshot = await getDocs(trackedRef);
-      
-      const loadedInvites: Invitation[] = [];
-      for (const trackDoc of trackedSnapshot.docs) {
-        const inviteId = trackDoc.id;
-        const inviteRef = doc(db, 'Invitations', inviteId);
-        try {
-          const inviteSnap = await getDoc(inviteRef);
-          if (inviteSnap.exists()) {
-            loadedInvites.push({ id: inviteSnap.id, ...inviteSnap.data() } as Invitation);
-          }
-        } catch (err) {
-          console.warn(`Failed to fetch invite ${inviteId}`, err);
-        }
-      }
-      setInvitations(loadedInvites);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.LIST, 'AdminTracking');
-    } finally {
-      setLoading(false);
+  const handleUpdate = (updates: Partial<InvitationData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleSaveInvitation = () => {
+    // Generate a short unique ID
+    const uniqueId = Math.random().toString(36).substring(2, 8);
+    const domain = window.location.origin;
+    setGeneratedLink(`${domain}/invite_${uniqueId}`);
+    setIsCopied(false);
+  };
+
+  const copyToClipboard = async () => {
+    if (generatedLink) {
+      await navigator.clipboard.writeText(generatedLink);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
-    fetchInvitations();
-  }, [user, navigate]);
-
-  const generateId = () => Math.random().toString(36).substring(2, 10);
-
-  const handleCreate = async () => {
-    if (!user) return;
-    const inviteId = `inv_${generateId()}`;
-    const newInvite: Omit<Invitation, 'id'> = {
-      admin_uid: user.uid,
-      status: 'draft',
-      brideName: 'Bride Name',
-      groomName: 'Groom Name',
-      date: '2024-12-31',
-      venue: 'Wedding Hall',
-    };
-
-    try {
-      // 1. Create in tracking collection first (we just need the ID to exist)
-      await setDoc(doc(db, 'AdminTracking', user.uid, 'MyInvites', inviteId), { createdAt: serverTimestamp() });
-      // 2. Create the actual invitation
-      await setDoc(doc(db, 'Invitations', inviteId), { ...newInvite, updatedAt: serverTimestamp() });
-      await fetchInvitations();
-    } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, `Invitations/${inviteId}`);
-    }
-  };
-
-  const handleToggleStatus = async (invite: Invitation) => {
-    try {
-      const newStatus = invite.status === 'draft' ? 'published' : 'draft';
-      await updateDoc(doc(db, 'Invitations', invite.id), {
-        status: newStatus,
-        updatedAt: serverTimestamp()
-      });
-      setInvitations(invs => invs.map(i => i.id === invite.id ? { ...i, status: newStatus } : i));
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `Invitations/${invite.id}`);
-    }
-  };
-
-  const handleDelete = async (inviteId: string) => {
-    if (!user || !window.confirm('Are you sure?')) return;
-    try {
-      await deleteDoc(doc(db, 'Invitations', inviteId));
-      await deleteDoc(doc(db, 'AdminTracking', user.uid, 'MyInvites', inviteId));
-      setInvitations(invs => invs.filter(i => i.id !== inviteId));
-    } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `Invitations/${inviteId}`);
-    }
-  };
-
-  if (loading) return <div className="p-8 text-center text-stone-500">Loading your dashboard...</div>;
+  if (previewId) {
+    return <InvitationView onBack={() => setPreviewId(null)} data={formData} />;
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-serif text-stone-800">My Invitations</h2>
-        <button
-          onClick={handleCreate}
-          className="flex items-center space-x-2 bg-stone-800 text-white px-4 py-2 rounded-lg hover:bg-stone-700"
-        >
-          <Plus size={18} />
-          <span>New Invitation</span>
-        </button>
+    <div dir="rtl" className="min-h-screen bg-[#FAF8F5] text-gray-800 p-4 lg:p-8 font-sans">
+      <div className="max-w-screen-2xl mx-auto space-y-6">
+        
+        {/* Header */}
+        <header className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 font-serif">لوحة تحكم دعوات الزفاف</h1>
+            <p className="text-gray-500 mt-1">إدارة وإنشاء دعوات الزفاف الرقمية بسهولة واحترافية</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setPreviewId('preview')}
+              className="text-amber-600 font-semibold text-sm hover:text-amber-700 transition-colors underline underline-offset-4 ml-4"
+            >
+              معاينة الدعوة الجديدة
+            </button>
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold border-2 border-amber-200">
+              أ
+            </div>
+          </div>
+        </header>
+
+        {/* Top 3-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          
+          {/* Left Panel: Creation */}
+          <div className="lg:col-span-3">
+            <CreationPanel data={formData} onChange={handleUpdate} onSave={handleSaveInvitation} />
+          </div>
+
+          {/* Center Panel: Design */}
+          <div className="lg:col-span-6">
+            <DesignPanel data={formData} onChange={handleUpdate} />
+          </div>
+
+          {/* Right Panel: Audio */}
+          <div className="lg:col-span-3">
+            <AudioPanel data={formData} onChange={handleUpdate} />
+          </div>
+
+        </div>
+
+        {/* Bottom Panel: Management */}
+        <div className="pt-4">
+          <ManagementTable onPreview={setPreviewId} />
+        </div>
+
+        {/* System Settings */}
+        <div className="pt-4 pb-8">
+          <SystemSettingsPanel />
+        </div>
+
       </div>
 
-      <div className="grid gap-4">
-        {invitations.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-2xl border border-stone-200">
-            <p className="text-stone-500">No invitations created yet.</p>
-          </div>
+      {/* Success Modal for Link Generation */}
+      <AnimatePresence>
+        {generatedLink && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          >
+             <motion.div 
+               initial={{ scale: 0.9, y: 20 }}
+               animate={{ scale: 1, y: 0 }}
+               exit={{ scale: 0.9, y: 20 }}
+               className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+             >
+                <button 
+                  onClick={() => setGeneratedLink(null)} 
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+                <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-center text-gray-800 mb-2">تم إنشاء الدعوة بنجاح!</h3>
+                <p className="text-center text-gray-500 mb-6">يمكنك الآن نسخ الرابط المختصر ومشاركته مع ضيوفك</p>
+                
+                <div className="flex items-center gap-3 bg-stone-50 p-4 rounded-xl mb-6 border border-stone-200">
+                   <LinkIcon className="text-amber-500 shrink-0" size={20} />
+                   <span className="flex-1 text-left text-gray-700 font-medium truncate" dir="ltr">{generatedLink}</span>
+                   <button 
+                     onClick={copyToClipboard}
+                     className="bg-white px-4 py-2 rounded-lg border border-stone-200 text-sm font-bold text-gray-700 hover:text-amber-600 hover:border-amber-300 shadow-sm transition-all flex items-center gap-2"
+                   >
+                     {isCopied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                     {isCopied ? 'تم النسخ' : 'نسخ'}
+                   </button>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setGeneratedLink(null);
+                    setPreviewId('preview');
+                  }}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all"
+                >
+                  فتح الدعوة
+                </button>
+             </motion.div>
+          </motion.div>
         )}
-        
-        {invitations.map(invite => (
-          <div key={invite.id} className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-stone-800">{invite.groomName} & {invite.brideName}</h3>
-              <p className="text-sm text-stone-500">{invite.date} • {invite.venue}</p>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => handleToggleStatus(invite)}
-                className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider ${
-                  invite.status === 'published' 
-                    ? 'bg-emerald-100 text-emerald-700' 
-                    : 'bg-stone-100 text-stone-600'
-                }`}
-              >
-                {invite.status}
-              </button>
-              
-              <button
-                onClick={() => navigate(`/${invite.id}`)}
-                className="p-2 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-colors"
-                title="View Invitation"
-              >
-                <ExternalLink size={18} />
-              </button>
-              
-              <button
-                onClick={() => handleDelete(invite.id)}
-                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Delete"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
+

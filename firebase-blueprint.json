@@ -5,69 +5,44 @@
       "description": "A wedding invitation",
       "type": "object",
       "properties": {
-        "admin_uid": {
-          "type": "string",
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
-        },
-        "status": {
-          "type": "string",
-          "enum": ["draft", "published"]
-        },
-        "brideName": {
-          "type": "string",
-          "maxLength": 100
-        },
-        "groomName": {
-          "type": "string",
-          "maxLength": 100
-        },
-        "date": {
-          "type": "string",
-          "maxLength": 100
-        },
-        "venue": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "updatedAt": {
-          "type": "timestamp"
-        }
+        "id": { "type": "string", "maxLength": 128 },
+        "groomName": { "type": "string", "maxLength": 128 },
+        "brideName": { "type": "string", "maxLength": 128 },
+        "weddingDate": { "type": "string", "maxLength": 128 },
+        "weddingTime": { "type": "string", "maxLength": 128 },
+        "message": { "type": "string", "maxLength": 2048 },
+        "font": { "type": "string", "maxLength": 64 },
+        "background": { "type": "string", "maxLength": 128 },
+        "customBackgroundImage": { "type": "string", "maxLength": 2048 },
+        "songUrl": { "type": "string", "maxLength": 2048 },
+        "showPauseButton": { "type": "boolean" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
       },
-      "required": ["admin_uid", "status", "brideName", "groomName", "date"]
+      "required": ["id", "groomName", "brideName", "weddingDate", "weddingTime", "message", "font", "background", "showPauseButton", "isActive", "createdAt", "updatedAt"]
     },
     "GuestbookEntry": {
-      "title": "Guestbook Entry",
-      "description": "A greeting message in the guestbook",
+      "title": "GuestbookEntry",
+      "description": "An RSVP and congratulation message from a guest",
       "type": "object",
       "properties": {
-        "authorName": {
-          "type": "string",
-          "maxLength": 100
-        },
-        "message": {
-          "type": "string",
-          "maxLength": 1000
-        },
-        "createdAt": {
-          "type": "timestamp"
-        }
+        "name": { "type": "string", "maxLength": 128 },
+        "guestsCount": { "type": "number" },
+        "message": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "number" }
       },
-      "required": ["authorName", "message", "createdAt"]
+      "required": ["name", "guestsCount", "createdAt"]
     }
   },
   "firestore": {
-    "/Invitations/{inviteID}": {
-      "schema": {
-        "$ref": "#/entities/Invitation"
-      },
-      "description": "Stores wedding invitations"
+    "/invitations/{inviteId}": {
+      "schema": { "$ref": "#/entities/Invitation" },
+      "description": "Stores wedding invitations created by the admin"
     },
-    "/Invitations/{inviteID}/Guestbook/{messageId}": {
-      "schema": {
-        "$ref": "#/entities/GuestbookEntry"
-      },
-      "description": "Stores greetings isolated to a specific invitation"
+    "/invitations/{inviteId}/guestbook/{entryId}": {
+      "schema": { "$ref": "#/entities/GuestbookEntry" },
+      "description": "Stores guest RSVP and congratulation messages for a specific invitation"
     }
   }
 }
