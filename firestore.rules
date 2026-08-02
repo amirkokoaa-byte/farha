@@ -1,98 +1,22 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
+    // Admin check: Only the Admin is authenticated in this Single-Admin Architecture.
     function isAdmin() {
-      // In this system, there is only one admin, and they are authenticated.
-      // We check if they are signed in. We can also hardcode the admin email or check email_verified.
       return request.auth != null;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-    
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-
-    function isValidInvitation(data) {
-      return data.keys().hasAll(['id', 'groomName', 'brideName', 'weddingDate', 'weddingTime', 'message', 'font', 'background', 'showPauseButton', 'isActive', 'createdAt', 'updatedAt'])
-        && data.id is string && data.id.size() <= 128
-        && data.groomName is string && data.groomName.size() <= 128
-        && data.brideName is string && data.brideName.size() <= 128
-        && data.weddingDate is string && data.weddingDate.size() <= 128
-        && data.weddingTime is string && data.weddingTime.size() <= 128
-        && data.message is string && data.message.size() <= 2048
-        && data.font is string && data.font.size() <= 64
-        && data.background is string && data.background.size() <= 128
-        && data.showPauseButton is bool
-        && data.isActive is bool
-        && data.createdAt == request.time
-        && data.updatedAt == request.time
-        && (
-          !data.keys().hasAny(['customBackgroundImage']) || 
-          (data.customBackgroundImage is string && data.customBackgroundImage.size() <= 2048)
-        )
-        && (
-          !data.keys().hasAny(['songUrl']) || 
-          (data.songUrl is string && data.songUrl.size() <= 2048)
-        );
-    }
-    
-    function isValidInvitationUpdate(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.groomName is string && data.groomName.size() <= 128
-        && data.brideName is string && data.brideName.size() <= 128
-        && data.weddingDate is string && data.weddingDate.size() <= 128
-        && data.weddingTime is string && data.weddingTime.size() <= 128
-        && data.message is string && data.message.size() <= 2048
-        && data.font is string && data.font.size() <= 64
-        && data.background is string && data.background.size() <= 128
-        && data.showPauseButton is bool
-        && data.isActive is bool
-        && data.updatedAt == request.time
-        && data.createdAt == existing().createdAt
-        && (
-          !data.keys().hasAny(['customBackgroundImage']) || 
-          (data.customBackgroundImage is string && data.customBackgroundImage.size() <= 2048)
-        )
-        && (
-          !data.keys().hasAny(['songUrl']) || 
-          (data.songUrl is string && data.songUrl.size() <= 2048)
-        );
-    }
-
-    function isValidGuestbookEntry(data) {
-      return data.keys().hasAll(['name', 'guestsCount', 'createdAt'])
-        && data.name is string && data.name.size() <= 128
-        && data.guestsCount is number && data.guestsCount >= 0 && data.guestsCount <= 10
-        && data.createdAt == request.time
-        && (
-          !data.keys().hasAny(['message']) || 
-          (data.message is string && data.message.size() <= 2048)
-        );
-    }
-    
-    function isInvitationActive(inviteId) {
-      let inv = get(/databases/$(database)/documents/invitations/$(inviteId));
-      return inv != null && inv.data.isActive == true;
-    }
-
     match /invitations/{inviteId} {
-      allow get: if isValidId(inviteId) && (isAdmin() || existing().isActive == true);
-      allow list: if isAdmin();
-      allow create: if isValidId(inviteId) && isAdmin() && isValidInvitation(incoming());
-      allow update: if isValidId(inviteId) && isAdmin() && isValidInvitationUpdate(incoming());
-      allow delete: if isValidId(inviteId) && isAdmin();
-      
-      match /guestbook/{entryId} {
-        allow get: if isValidId(entryId) && isValidId(inviteId) && (isAdmin() || isInvitationActive(inviteId));
-        allow list: if isValidId(inviteId) && (isAdmin() || isInvitationActive(inviteId));
-        allow create: if isValidId(entryId) && isValidId(inviteId) && (isAdmin() || isInvitationActive(inviteId)) && isValidGuestbookEntry(incoming());
-        allow update, delete: if isValidId(entryId) && isAdmin();
+      // Guests can read if the invitation is active. Admin can read/write everything.
+      allow read: if isAdmin() || resource.data.isActive == true;
+      allow write: if isAdmin();
+
+      match /guestbook/{messageId} {
+        // Guests can only create new messages (not overwrite). Admin can manage.
+        allow read: if isAdmin() || get(/databases/$(database)/documents/invitations/$(inviteId)).data.isActive == true;
+        allow create: if !exists(/databases/$(database)/documents/invitations/$(inviteId)/guestbook/$(messageId));
+        allow update, delete: if isAdmin();
       }
     }
   }

@@ -37,27 +37,41 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onClose }: Ima
     
     try {
       setIsUploading(true);
+      setUploadProgress(10);
       const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      const fileName = `thumbnail_${Date.now()}.jpg`;
-      const storageRef = ref(storage, `invitations/${fileName}`);
+      setUploadProgress(40);
       
-      const uploadTask = uploadBytesResumable(storageRef, croppedImageBlob);
-      
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-        }, 
-        (error) => {
-          console.error("Upload error:", error);
-          setIsUploading(false);
-        }, 
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          onUploadSuccess(downloadURL);
+      const reader = new FileReader();
+      reader.readAsDataURL(croppedImageBlob);
+      reader.onloadend = async () => {
+        try {
+          setUploadProgress(60);
+          const base64data = reader.result;
+          
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ imageBase64: base64data }),
+          });
+
+          const data = await response.json();
+          setUploadProgress(100);
+          
+          if (response.ok && data.url) {
+            onUploadSuccess(data.url);
+          } else {
+            console.error("Upload failed:", data.error);
+            alert("حدث خطأ أثناء رفع الصورة: " + (data.error || 'Unknown error'));
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
+          alert("حدث خطأ أثناء رفع الصورة");
+        } finally {
           setIsUploading(false);
         }
-      );
+      };
     } catch (e) {
       console.error(e);
       setIsUploading(false);

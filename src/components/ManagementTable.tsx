@@ -60,8 +60,7 @@ export function ManagementTable({ onPreview }: ManagementTableProps) {
           <tbody className="divide-y divide-stone-100">
             {MOCK_INVITATIONS.map((inv) => {
               // Create a short link representation
-              const couplePath = `${inv.groomName}${inv.brideName}`.replace(/\s+/g, '');
-              const shortLink = `site.com/${couplePath}`;
+              const shortLink = `${window.location.origin}/invite_${inv.id}`;
 
               return (
                 <tr key={inv.id} className="hover:bg-stone-50/80 transition-colors group">
